@@ -1,0 +1,57 @@
+name: Publish documentation to GitHub pages 📝
+
+on:
+  push:
+    tags:
+      - '*'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      - name: Set up Git SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          eval $(ssh-agent -s)
+          ssh-add ~/.ssh/id_rsa
+          ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - run: |
+          python -m pip install --upgrade pip build
+          pip install pdoc
+          pip install --index-url=https://blpapi.bloomberg.com/repository/releases/python/simple blpapi
+          if [ -f requirements.txt ]; then pip install -r requirements.txt --force; fi
+    
+      - run: pdoc --html project_name/ --output-dir docs/ --template-dir docs/templates --force
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs/
+
+  publish:
+    needs: generate
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: documentation
+      url: "${{ steps.deployment.outputs.page_url }}/project_name"
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

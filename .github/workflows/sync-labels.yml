@@ -1,0 +1,15 @@
+name: Sync labels 🎨
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: EndBug/label-sync@v2
+        with:
+          config-file: .github/labels.yml
+          token: ${{ secrets.LABEL_SYNCER }}
+          delete-other-labels: true

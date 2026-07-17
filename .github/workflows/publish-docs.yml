@@ -37,7 +37,7 @@ jobs:
           pip install --index-url=https://blpapi.bloomberg.com/repository/releases/python/simple blpapi
           if [ -f requirements.txt ]; then pip install -r requirements.txt --force; fi
     
-      - run: pdoc --html project_name/ --output-dir docs/ --template-dir docs/templates --force
+      - run: pdoc --html analytics/ --output-dir docs/ --template-dir docs/templates --force
 
       - uses: actions/upload-pages-artifact@v4
         with:
@@ -51,7 +51,7 @@ jobs:
       id-token: write
     environment:
       name: documentation
-      url: "${{ steps.deployment.outputs.page_url }}/project_name"
+      url: "${{ steps.deployment.outputs.page_url }}/analytics"
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4

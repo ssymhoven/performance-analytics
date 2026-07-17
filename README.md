@@ -25,7 +25,7 @@
 This template provides some basic boilerplate code to get started with new projects. 
 The following components are included:
 
-General folder structure for [source code](project_name), [tests](tests), [documentation](docs) and some 
+General folder structure for [source code](analytics), [tests](tests), [documentation](docs) and some 
 [workflows](.github/workflows) as well as a [.gitignore](.gitignore) file, a [requirements.txt](requirements.txt)
 file and the [pyproject.toml](pyproject.toml) file.
 
@@ -181,7 +181,7 @@ All occurrences of `project_name` in the files
 
 and the directory
 
-* [project_name](project_name)
+* [project_name](analytics)
 
 have to be renamed to your specific project name. 
 

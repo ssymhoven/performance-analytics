@@ -1,0 +1,34 @@
+{
+	portfolio(accountSegments: $account_segment_id, portfolioType: "$portfolio_type") {
+		portfolioPositions {
+			percentNAV {
+				value {
+					quantity
+				}
+			}
+			positions {
+				 accountings {
+					accountingDate
+					orderAction
+					confirmation {
+						confirmationStatus
+						volume {
+							quantity
+						}
+					}
+				}
+			}
+			positionType
+			rateable {
+				name
+				assetClassLiteral
+				symbol(type: "ISIN") {
+					identifier
+				}
+				... on BOND {
+					dateOfIssue
+				}
+			}
+		}
+	}
+}

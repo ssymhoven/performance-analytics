@@ -108,7 +108,7 @@ if __name__ == "__main__":
     debug_bucket(
         portfolio_data,
         benchmark_data,
-        "Securitized",
+        "Corporate",
         "5-6",
         start_date
     )

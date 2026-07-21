@@ -3,19 +3,15 @@ from datetime import datetime
 import pandas as pd
 
 from analytics.plots.plot_bond_excess_returns import plot_bond_excess_return
-from analytics.plots.plot_heatmap import plot_excess_return_heatmap
-from analytics.portfolio import build_portfolio
+from analytics.plots.plot_attribution_heatmap import plot_attribution_heatmap
+from analytics.plots.plot_selection_heatmap import plot_selection_heatmap
+from analytics.portfolio import build_portfolio, debug_bucket
+
 
 def print_portfolio_statistics(
     portfolio_data: pd.DataFrame,
 ):
     df = portfolio_data.copy()
-
-    df["excess_ctr_bp"] = (
-        df["nav_pct"]
-        * df["excess_return"]
-        * 10000
-    )
 
     print()
     print("=" * 170)
@@ -26,7 +22,6 @@ def print_portfolio_statistics(
     print(f"Median Excess Return:    {df['excess_return'].median()*10000:.1f} bp")
     print(f"Average Adj. Excess:     {df['adj_excess_return'].mean():.2f} σ")
     print(f"Median Adj. Excess:      {df['adj_excess_return'].median():.2f} σ")
-    print(f"Total Alpha Contribution {df['excess_ctr_bp'].sum():.1f} bp")
     print(f"Positive Alpha Names:    {(df['excess_return'] >= 0).sum()}")
     print(f"Negative Alpha Names:    {(df['excess_return'] < 0).sum()}")
     print(f"Portfolio Bonds:         {len(df)}")
@@ -38,18 +33,12 @@ def print_underperformers(
 ):
     df = portfolio_data.copy()
 
-    df["excess_ctr_bp"] = (
-        df["nav_pct"]
-        * df["excess_return"]
-        * 10000
-    )
-
     under = (
         df[
             (df["adj_excess_return"] <= -1) & (df["issue_date"] <= datetime.strptime(start_date, "%Y-%m-%d"))
         ]
         .sort_values(
-            "excess_ctr_bp"
+            "adj_excess_return"
         )
     )
 
@@ -71,7 +60,6 @@ def print_underperformers(
             f" | Return BM={row['bm_return']:7.2%}"
             f" | Excess={row['excess_return']*10000:7.1f}bp"
             f" | Std={row['adj_excess_return']:6.2f}σ"
-            f" | Ctr={row['excess_ctr_bp']:6.2f}bp"
             f" | {row['bclass1']:18} "
             f" | {row['country']}"
         )
@@ -99,7 +87,7 @@ if __name__ == "__main__":
         end_date=end_date,
     )
 
-    plot_excess_return_heatmap(
+    plot_attribution_heatmap(
         portfolio_data=portfolio_data,
         benchmark_data=benchmark_data,
         account_segment_id=account_segment_id,
@@ -107,6 +95,20 @@ if __name__ == "__main__":
         end_date=end_date,
     )
 
+    plot_selection_heatmap(
+        portfolio_data=portfolio_data,
+        account_segment_id=account_segment_id,
+        start_date=start_date,
+        end_date=end_date
+    )
+
     print_portfolio_statistics(portfolio_data=portfolio_data)
     print_underperformers(portfolio_data=portfolio_data, start_date=start_date)
 
+    debug_bucket(
+        portfolio_data,
+        benchmark_data,
+        "Securitized",
+        "5-6",
+        start_date
+    )

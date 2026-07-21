@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Tuple
 
 import pandas as pd
@@ -624,3 +625,148 @@ def build_attribution(portfolio_data) -> pd.DataFrame:
 
     return portfolio_data
 
+def debug_bucket(
+    portfolio_data,
+    benchmark_data,
+    bclass1,
+    bucket,
+    start_date
+):
+    print()
+    print("=" * 140)
+    print(f"{bclass1} | {bucket}")
+    print("=" * 140)
+
+    #
+    # Benchmark
+    #
+    bm = benchmark_data[
+        (benchmark_data["bclass1"] == bclass1)
+        & (benchmark_data["bucket"] == bucket)
+    ].copy()
+
+    print("\nBENCHMARK")
+
+    bm["ctr_bp"] = bm["ctr"] * 10000
+
+    print(
+        bm[
+            [
+                "country",
+                "weight",
+                "return",
+                "ctr_bp",
+                "std",
+            ]
+        ]
+        .sort_values("weight", ascending=False)
+        .to_string(
+            index=False,
+            formatters={
+                "weight": "{:.2%}".format,
+                "return": "{:.2%}".format,
+                "std": "{:.2%}".format,
+                "ctr_bp": "{:.2f}".format,
+            },
+        )
+    )
+
+    print()
+
+    print(
+        f"BM Weight: {bm['weight'].sum():.2%}"
+    )
+
+    print(
+        f"BM Contribution: {bm['ctr_bp'].sum():.2f}bp"
+    )
+
+    weighted_std = (
+        (bm["weight"] * bm["std"]).sum()
+        / bm["weight"].sum()
+    )
+
+    print(
+        f"Weighted Std: {weighted_std*10000:.2f}bp"
+    )
+
+    #
+    # Portfolio
+    #
+    pf = portfolio_data[(portfolio_data["issue_date"] <= datetime.strptime(start_date, "%Y-%m-%d"))].copy()
+
+    pf["nav_pct"] = (
+            pf["nav_pct"]
+            / pf["nav_pct"].sum()
+    )
+
+    pf = pf[
+        (pf["bclass1"] == bclass1)
+        & (pf["bucket"] == bucket)
+    ].copy()
+
+    print()
+    print("PORTFOLIO")
+
+    pf["ctr_bp"] = (
+        pf["nav_pct"]
+        * pf["return"]
+        * 10000
+    )
+
+    cols = [
+        "instrument_name",
+        "country",
+        "nav_pct",
+        "return",
+        "bm_return",
+        "excess_return",
+        "adj_excess_return",
+        "ctr_bp"
+    ]
+
+    print(
+        pf[cols]
+        .sort_values(
+            "nav_pct",
+            ascending=False
+        )
+        .to_string(
+            index=False,
+            formatters={
+                "nav_pct": "{:.2%}".format,
+                "return":
+                    lambda x: f"{x*10000:.1f}bp",
+                "bm_return":
+                    lambda x: f"{x*10000:.1f}bp",
+                "excess_return":
+                    lambda x: f"{x*10000:.1f}bp",
+                "adj_excess_return":
+                    lambda x: f"{x:.2f}σ",
+                "ctr_bp":
+                    lambda x: f"{x:.2f}bp"
+            }
+        )
+    )
+
+    print()
+
+    print(
+        f"Portfolio Weight: "
+        f"{pf['nav_pct'].sum():.2%}"
+    )
+
+    print(
+        f"Portfolio Contribution: "
+        f"{pf['ctr_bp'].sum():.2f}bp"
+    )
+
+    weighted_excess = (
+        (pf["nav_pct"] * pf["excess_return"]).sum()
+        / pf["nav_pct"].sum()
+    )
+
+    print(
+        f"Weighted Excess Return: "
+        f"{weighted_excess*10000:.2f}bp"
+    )

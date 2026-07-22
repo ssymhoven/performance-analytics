@@ -19,6 +19,9 @@
 				}
 			}
 			positionType
+			currency {
+                iso4217Code
+            }
 			rateable {
 				name
 				assetClassLiteral

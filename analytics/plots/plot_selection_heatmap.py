@@ -18,7 +18,8 @@ def plot_selection_heatmap(
     df = portfolio_data.copy()
 
     #
-    # Restrict to bonds already outstanding at period start
+    # Restrict to bonds already outstanding
+    # at the start of the period
     #
     df = df[
         df["issue_date"]
@@ -35,7 +36,7 @@ def plot_selection_heatmap(
 
     #
     # Selection effect:
-    # Sum of excess returns within each bucket
+    # Average excess return per bucket
     #
     selection_df = (
         df.groupby(
@@ -49,7 +50,7 @@ def plot_selection_heatmap(
     )
 
     #
-    # Mean adjusted excess return (σ)
+    # Mean adjusted excess return
     #
     adj_excess_df = (
         df.groupby(
@@ -127,36 +128,153 @@ def plot_selection_heatmap(
         norm = None
 
     #
-    # Plot
+    # Figure layout
     #
-    plt.figure(figsize=(18, 10))
+    fig = plt.figure(figsize=(20, 10))
 
-    sns.heatmap(
+    gs = fig.add_gridspec(
+        1,
+        2,
+        width_ratios=[7, 1]
+    )
+
+    ax = fig.add_subplot(gs[0])
+    text_ax = fig.add_subplot(gs[1])
+
+    text_ax.axis("off")
+
+    methodology_text = (
+
+        "\n$\\mathbf{Period}$: "
+        f"{start_date} to {end_date}\n\n"
+
+        "$\\mathbf{METHODOLOGY}$\n\n"
+
+        "$\\mathbf{Excess\\, Return}$\n"
+
+        r"$ER_i = R_i - R_{BM,i}$"
+
+        "\n\n"
+
+        "$\\mathbf{Adjusted\\, Excess\\, Return}$\n"
+
+        r"$AdjER_i = \frac{ER_i}{\sigma_{BM}}$"
+
+        "\n\n"
+
+        "$\\mathbf{Return\\, Benchmark\\, Matching}$\n"
+
+        "1. (Sector, Country, Maturity Bucket)\n"
+        "2. Fallback: (Sector, Maturity Bucket)\n\n"
+
+        "$\\mathbf{Benchmark\\, Standard\\, Deviation}$\n"
+
+        r"$\sigma_{BM}$ is always calculated"
+        "\n"
+        "using only:\n"
+        "(Sector, Maturity Bucket)\n\n"
+        
+        "$\\mathbf{Selection\\, Effect}$\n"
+
+        r"$Selection_{s,b} = "
+        r"\frac{1}{N}"
+        r"\sum_{i \in (s,b)}"
+        r"(R_i - R_{BM,i})$"
+
+        "\n\n"
+
+        "$\\mathbf{Adjusted\\, Selection\\, Effect}$\n"
+
+        r"$AdjSelection_{s,b}"
+        r"="
+        r"\frac{1}{N}"
+        r"\sum_{i \in (s,b)}"
+        r"AdjER_i$"
+        "\n\n"
+
+        "$\\mathbf{Definitions}$\n"
+
+        r"$R_i$ = Bond Total Return in EUR"
+        "\n"
+
+        r"$R_{BM,i}$ = Matched Benchmark Return"
+        "\n"
+
+        r"$ER_i$ = Excess Return"
+        "\n"
+
+        r"$AdjER_i$ = Adjusted Excess Return"
+        "\n"
+
+        r"$\sigma_{BM}$ = Benchmark Return"
+        "\nStandard Deviation"
+        "\n\n"
+
+        "$\\mathbf{Heatmap}$\n"
+
+        "Color = Average Excess Return (bp)\n"
+        "Line 1 = Average Excess Return\n"
+        "Line 2 = Average Adjusted Excess Return\n"
+        "Line 3 = Number of Bonds"
+    )
+
+    text_ax.text(
+        0.0,
+        1.0,
+        methodology_text,
+        va="top",
+        ha="left",
+        fontsize=14,
+    )
+
+    #
+    # Heatmap
+    #
+    heatmap = sns.heatmap(
         selection_df,
+        ax=ax,
         cmap="RdYlGn",
         norm=norm,
         annot=annotations,
         fmt="",
         linewidths=0.5,
-        cbar_kws={
-            "label": "Average Excess Return (bp)"
-        },
+        annot_kws={"size": 13}
     )
 
-    plt.title(
-        "Selection Effect Heatmap\n"
-        "Color = Average Excess Return (bp)\n"
-        "Text = Average Excess Return / Avg Adjusted Excess Return / Number of Bonds"
+    cbar = heatmap.collections[0].colorbar
+    cbar.ax.tick_params(labelsize=14)
+
+    cbar.set_label(
+        "Average Excess Return (bp)",
+        fontsize=14,
     )
 
-    plt.xlabel("Maturity Bucket")
-    plt.ylabel("BCLASS Level 1")
+    ax.set_title(
+        "Bond Selection Analysis by Sector and Maturity Bucket", fontsize=16
+    )
 
-    plt.tight_layout()
+    ax.set_xlabel("Maturity Bucket", fontsize=14)
+    ax.set_ylabel("BCLASS Level 1", fontsize=14)
+    ax.tick_params(
+        axis="x",
+        labelsize=14,
+    )
+    ax.tick_params(
+        axis="y",
+        labelsize=14,
+    )
+
+    plt.subplots_adjust(
+        left=0.06,
+        right=0.98,
+        top=0.95,
+        bottom=0.08,
+        wspace=-0.1,
+    )
 
     filename = (
         OUTPUT_DIR
-        / f"selection_heatmap_"
+        / f"bond_selection_heatmap_"
         f"{account_segment_id}_"
         f"{start_date}_"
         f"{end_date}.png"

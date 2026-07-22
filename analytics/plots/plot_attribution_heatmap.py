@@ -186,9 +186,9 @@ def plot_attribution_heatmap(
             std_bp = bm_std_df.loc[row, col]
 
             bm_annotations.loc[row, col] = (
-                f"{weight:.1%}\n"
-                f"{ctr_bp:.1f}bp\n"
-                f"Ø {std_bp:.1f}bp"
+                f"w: {weight:.1%}\n"
+                f"ctr: {ctr_bp:.1f}bp\n"
+                f"σ: Ø {std_bp:.1f}bp"
             )
 
     #

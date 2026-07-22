@@ -57,6 +57,7 @@ def get_portfolio(account_segment_id: int):
                 (((p.get("percentNAV") or {}).get("value") or {}).get("quantity")) / 100
             ),
             "issue_date": ((p.get("rateable") or {}).get("dateOfIssue")),
+            "currency": ((p.get("currency") or {}).get("iso4217Code")),
             "first_buy": (
                 pd.to_datetime(first_buy, unit="ms")
                 if first_buy is not None else pd.NaT
@@ -483,6 +484,34 @@ def get_portfolio_data(
         bloomberg_data,
         on="isin",
         how="left",
+    )
+
+    non_eur = portfolio[portfolio["currency"] != "EUR"].copy()
+    non_eur["isin"] = non_eur["isin"] + " Corp"
+    non_eur_isin = non_eur["isin"].tolist()
+
+    tr_non_eur = bquery.bdp(
+        non_eur_isin,
+        ["CUST_TRR_RETURN_HOLDING_PER"],
+        overrides=[
+            ("CUST_TRR_START_DT", start_date.replace("-", "")),
+            ("CUST_TRR_END_DT", end_date.replace("-", "")),
+            ("CUST_TRR_CRNCY", "EUR"),
+        ]
+    )
+
+    return_map = dict(
+        zip(
+            tr_non_eur["security"],
+            tr_non_eur["CUST_TRR_RETURN_HOLDING_PER"],
+        )
+    )
+
+    mask = result["isin"].isin(return_map)
+
+    result.loc[mask, "return"] = (
+        result.loc[mask, "isin"]
+        .map(return_map)
     )
 
     result.to_parquet(cache_file, index=False)

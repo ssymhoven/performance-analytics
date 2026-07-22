@@ -68,8 +68,8 @@ def print_underperformers(
 
 if __name__ == "__main__":
     account_segment_id = 79939970
-    start_date = "2026-06-01"
-    end_date = "2026-07-17"
+    start_date = "2026-07-01"
+    end_date = "2026-07-21"
     index = "LBEATREU Index"
     prefix = f"{account_segment_id}_{start_date}_{end_date}"
 
@@ -108,7 +108,7 @@ if __name__ == "__main__":
     debug_bucket(
         portfolio_data,
         benchmark_data,
-        "Corporate",
-        "5-6",
+        "Securitized",
+        "0-1",
         start_date
     )

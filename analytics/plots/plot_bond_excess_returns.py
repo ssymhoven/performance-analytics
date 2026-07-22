@@ -352,6 +352,7 @@ def plot_bond_excess_return(
             [
                 "instrument_name",
                 "country",
+                "bucket",
                 "nav_pct",
                 "return",
                 "bm_return",
@@ -383,6 +384,7 @@ def plot_bond_excess_return(
         table_df.columns = [
             "Bond",
             "Country",
+            "Bucket",
             "Weight",
             "Return",
             "BM Return",

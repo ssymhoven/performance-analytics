@@ -18,6 +18,9 @@ def plot_bond_excess_return(
 
     portfolio_data = portfolio_data.copy()
 
+    #
+    # Position categorization
+    #
     portfolio_data["position_category"] = "Unchanged Position"
 
     mask = portfolio_data["issue_date"].between(start, end)
@@ -52,58 +55,67 @@ def plot_bond_excess_return(
     #
     # Figure layout
     #
-    fig = plt.figure(figsize=(18, 10))
+    fig = plt.figure(figsize=(20, 14))
 
     gs = fig.add_gridspec(
-        1,
         2,
-        width_ratios=[5, 1]
+        2,
+        width_ratios=[5, 1],
+        height_ratios=[4, 1.8],
     )
 
-    ax = fig.add_subplot(gs[0])
-    text_ax = fig.add_subplot(gs[1])
+    ax = fig.add_subplot(gs[0, 0])
+    text_ax = fig.add_subplot(gs[0, 1])
+    table_ax = fig.add_subplot(gs[1, :])
 
     text_ax.axis("off")
+    table_ax.axis("off")
 
+    #
+    # Methodology
+    #
     methodology_text = (
 
-        "\n$\mathbf{Period}$: "+ f"{start_date} to {end_date}\n\n"
-        
-        "$\mathbf{METHODOLOGY}$\n\n"
+        "\n$\\mathbf{Period}$: "
+        f"{start_date} to {end_date}\n\n"
 
-        "$\mathbf{Excess\, Return}$\n"
+        "$\\mathbf{METHODOLOGY}$\n\n"
+
+        "$\\mathbf{Excess\\, Return}$\n"
 
         r"$ER_i = R_i - R_{BM,i}$"
         "\n\n"
 
-        "$\mathbf{Adjusted\, Excess\, Return}$\n"
+        "$\\mathbf{Adjusted\\, Excess\\, Return}$\n"
 
         r"$AdjER_i = \frac{ER_i}{\sigma_{BM}}$"
         "\n\n"
 
-        "$\mathbf{Return\, Benchmark\, Matching}$\n"
+        "$\\mathbf{Return\\, Benchmark\\, Matching}$\n"
 
         "1. (Sector, Country, Maturity Bucket)\n"
         "2. Fallback: (Sector, Maturity Bucket)\n\n"
 
         "$\\mathbf{Benchmark\\, Standard\\, Deviation}$\n"
 
-        r"$\sigma_{BM}$ is always calculated using only:"
-        +"\n"
+        r"$\sigma_{BM}$ is always calculated using:"
+        "\n"
         "(Sector, Maturity Bucket)\n\n"
 
-        "$\mathbf{Definitions}$\n"
+        "$\\mathbf{Definitions}$\n"
 
-        r"$R_i$     = Bond Total Return in EUR"
+        r"$R_i$ = Bond Total Return in EUR"
         "\n"
 
         r"$R_{BM,i}$ = Benchmark Return"
         "\n"
 
-        r"$\sigma_{BM}$ = Benchmark Return Standard" + "\nDeviation"
+        r"$\sigma_{BM}$ = Benchmark Return"
+        "\nStandard Deviation"
         "\n\n"
 
-        "$\mathbf{Chart}$\n"
+        "$\\mathbf{Chart}$\n"
+
         "X-Axis = Portfolio Weight\n"
         "Y-Axis = Adjusted Excess Return"
     )
@@ -207,20 +219,37 @@ def plot_bond_excess_return(
         "0",
         "+1σ",
         "+2σ",
-        "+3σ"
+        "+3σ",
     ])
 
     ax.xaxis.set_major_formatter(
         mtick.PercentFormatter(1.0)
     )
 
-    ax.set_xlabel("% NAV")
-    ax.set_ylabel("Adjusted Excess Return (σ)")
-
-    ax.set_title(
-        f"Bond Adjusted Excess Return vs. Portfolio Weight", fontsize=16
+    ax.set_xlabel(
+        "% NAV",
+        fontsize=14,
     )
 
+    ax.set_ylabel(
+        "Adjusted Excess Return (σ)",
+        fontsize=14,
+    )
+
+    ax.set_title(
+        "Bond Adjusted Excess Return vs. Portfolio Weight",
+        fontsize=16,
+        fontweight="bold",
+    )
+
+    ax.tick_params(
+        axis="both",
+        labelsize=12,
+    )
+
+    #
+    # Annotate outliers
+    #
     outliers = portfolio_data[
         (portfolio_data["adj_excess_return"] <= -2)
         | (portfolio_data["adj_excess_return"] >= 2)
@@ -245,6 +274,9 @@ def plot_bond_excess_return(
             ),
         )
 
+    #
+    # Legend
+    #
     legend_elements = [
         Line2D(
             [0], [0],
@@ -300,7 +332,99 @@ def plot_bond_excess_return(
         loc="upper right",
     )
 
-    plt.tight_layout()
+    #
+    # Worst performers table
+    #
+    worst_df = (
+        portfolio_data[
+            portfolio_data["adj_excess_return"] <= -1.0
+        ]
+        .copy()
+        .sort_values(
+            "adj_excess_return",
+            ascending=True,
+        )
+    )
+
+    if not worst_df.empty:
+
+        table_df = worst_df[
+            [
+                "instrument_name",
+                "country",
+                "nav_pct",
+                "return",
+                "bm_return",
+                "excess_return",
+                "adj_excess_return",
+            ]
+        ].copy()
+
+        table_df["nav_pct"] = (
+            table_df["nav_pct"].map(lambda x: f"{x:.2%}")
+        )
+
+        table_df["return"] = (
+            table_df["return"].map(lambda x: f"{x*10000:.1f}bp")
+        )
+
+        table_df["bm_return"] = (
+            table_df["bm_return"].map(lambda x: f"{x*10000:.1f}bp")
+        )
+
+        table_df["excess_return"] = (
+            table_df["excess_return"].map(lambda x: f"{x*10000:.1f}bp")
+        )
+
+        table_df["adj_excess_return"] = (
+            table_df["adj_excess_return"].map(lambda x: f"{x:.2f}σ")
+        )
+
+        table_df.columns = [
+            "Bond",
+            "Country",
+            "Weight",
+            "Return",
+            "BM Return",
+            "Excess",
+            "Adj. Excess Return",
+        ]
+
+        table_ax.set_title(
+            "Worst Performing Bonds (Adjusted Excess Return ≤ -1σ)",
+            fontsize=14,
+            fontweight="bold",
+            loc="left"
+        )
+
+        table = table_ax.table(
+            cellText=table_df.values,
+            colLabels=table_df.columns,
+            loc="center",
+            cellLoc="left",
+        )
+
+        table.auto_set_font_size(False)
+        table.set_fontsize(16)
+        table.scale(1, 1.8)
+
+        for (row, col), cell in table.get_celld().items():
+            if row == 0:
+                cell.set_text_props(weight="bold")
+                cell.set_facecolor("#D9EAD3")
+
+        table.auto_set_column_width(
+            col = list(range(len(table_df.columns)))
+        )
+
+    plt.subplots_adjust(
+        left=0.05,
+        right=0.98,
+        top=0.95,
+        bottom=0.04,
+        hspace=0.15,
+        wspace=0.05,
+    )
 
     filename = (
         OUTPUT_DIR
